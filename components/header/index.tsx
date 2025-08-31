@@ -51,6 +51,7 @@ const tabs: Tabs[] = [
   },
   { name: 'Components', href: '/components', variant: 'linkHover2' },
   { name: 'Templates', href: '/templates', variant: 'linkHover2' },
+  { name: 'Forms', href: '/forms', variant: 'linkHover2' },
 ]
 
 export default function Header() {

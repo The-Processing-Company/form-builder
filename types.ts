@@ -47,3 +47,24 @@ export interface EditorHistoryState {
   blocks: EditorBlock[]
   timestamp: number
 }
+
+// New types for form storage
+export interface StoredForm {
+  id: string
+  name: string
+  fields: FormFieldOrGroup[]
+  createdAt: number
+  updatedAt: number
+  description?: string
+}
+
+export interface FormMetadata {
+  id: string
+  name: string
+  createdAt: number
+  updatedAt: number
+  description?: string
+  fieldCount: number
+}
+
+export type FormFieldOrGroup = FormFieldType | FormFieldType[]

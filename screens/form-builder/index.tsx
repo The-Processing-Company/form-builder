@@ -1,10 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Link } from 'next-view-transitions'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { Save, ArrowLeft } from 'lucide-react'
 
-import { FormFieldType } from '@/types'
+import { FormFieldType, FormFieldOrGroup, StoredForm } from '@/types'
 import { defaultFieldConfig } from '@/constants'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { Separator } from '@/components/ui/separator'
@@ -15,16 +17,112 @@ import { FormFieldList } from '@/screens/form-field-list'
 import { FormPreview } from '@/screens/form-preview'
 import { EditFieldDialog } from '@/screens/edit-field-dialog'
 import EmptyListSvg from '@/assets/oc-thinking.svg'
-import Editor from '@/components/editor/editor'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { FormStorage } from '@/lib/form-storage'
 
-export type FormFieldOrGroup = FormFieldType | FormFieldType[]
+interface FormBuilderProps {
+  formId?: string
+  filename?: string
+}
 
-export default function FormBuilder() {
+export default function FormBuilder({ formId, filename }: FormBuilderProps) {
+  const router = useRouter()
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
   const [formFields, setFormFields] = useState<FormFieldOrGroup[]>([])
   const [selectedField, setSelectedField] = useState<FormFieldType | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [formName, setFormName] = useState(filename || 'Untitled Form')
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load form data when component mounts or formId changes
+  useEffect(() => {
+    loadForm()
+  }, [formId])
+
+  const loadForm = () => {
+    if (!formId || formId === 'new') {
+      // New form - start with empty state
+      setFormFields([])
+      setFormName(filename || 'Untitled Form')
+      setHasUnsavedChanges(false)
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const storedForm = FormStorage.getFormById(formId)
+      if (storedForm) {
+        setFormFields(storedForm.fields)
+        setFormName(storedForm.name)
+        setHasUnsavedChanges(false)
+      } else {
+        toast.error('Form not found')
+        router.push('/forms')
+        return
+      }
+    } catch (error) {
+      console.error('Error loading form:', error)
+      toast.error('Failed to load form')
+      router.push('/forms')
+      return
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!formName.trim()) {
+      toast.error('Please enter a form name')
+      return
+    }
+
+    try {
+      const formData = {
+        name: formName.trim(),
+        fields: formFields
+      }
+
+      let updatedForm: StoredForm
+      
+      if (formId && formId !== 'new') {
+        // Update existing form
+        updatedForm = FormStorage.saveForm(formData, formId)
+      } else {
+        // Create new form
+        updatedForm = FormStorage.saveForm(formData)
+        // Update URL with new form ID
+        router.replace(`/playground/${updatedForm.id}`)
+      }
+
+      setHasUnsavedChanges(false)
+      toast.success('Form saved successfully!')
+    } catch (error) {
+      console.error('Error saving form:', error)
+      toast.error('Failed to save form')
+    }
+  }
+
+  const handleNameChange = (newName: string) => {
+    setFormName(newName)
+    if (formName !== newName) {
+      setHasUnsavedChanges(true)
+    }
+  }
+
+  const handleFormChange = (newFields: FormFieldOrGroup[]) => {
+    setFormFields(newFields)
+    setHasUnsavedChanges(true)
+  }
+
+  const handleFormFieldsSet = (value: FormFieldOrGroup[] | ((prev: FormFieldOrGroup[]) => FormFieldOrGroup[])) => {
+    const newFields = typeof value === 'function' ? value(formFields) : value
+    setFormFields(newFields)
+    setHasUnsavedChanges(true)
+  }
 
   const addFormField = (variant: string, index: number) => {
     const newFieldName = `name_${Math.random().toString().slice(-10)}`
@@ -51,7 +149,9 @@ export default function FormBuilder() {
       value: '',
       variant,
     }
-    setFormFields([...formFields, newField])
+    
+    const updatedFields = [...formFields, newField]
+    handleFormFieldsSet(updatedFields)
   }
 
   const findFieldPath = (
@@ -87,6 +187,7 @@ export default function FormBuilder() {
       ...updates,
     }
     setFormFields(updatedFields)
+    setHasUnsavedChanges(true)
   }
 
   const openEditDialog = (field: FormFieldType) => {
@@ -117,20 +218,45 @@ export default function FormBuilder() {
 
   return (
     <section className="md:max-h-screen space-y-8">
-      <div className="max-w-5xl mx-auto space-y-4">
-        <h1 className="text-2xl font-semibold">Playground</h1>
-        <p className="text-sm text-muted-foreground">
-          After successfully installing Shadcn, you can simply copy and paste
-          the generated form components to get started. Some components may have
-          additional dependencies, so make sure to review their documentation in
-          the{' '}
-          <Link href="/readme" className="underline text-slate-800  dark:text-white dark:font-semibold">
-            README
-          </Link>{' '}
-          for further instructions.
-        </p>
-        {/* <Editor /> */}
+      {/* Form Header with Name and Save */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 bg-card rounded-lg border">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/forms')}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Forms
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <Label htmlFor="form-name" className="text-sm font-medium">
+              Form Name:
+            </Label>
+            <Input
+              id="form-name"
+              value={formName}
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="Enter form name..."
+              className="w-48"
+            />
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {hasUnsavedChanges && (
+            <span className="text-sm text-muted-foreground">
+              Unsaved changes
+            </span>
+          )}
+          <Button onClick={handleSave} disabled={!hasUnsavedChanges}>
+            <Save className="w-4 h-4 mr-2" />
+            Save
+          </Button>
+        </div>
       </div>
+
       <If
         condition={formFields.length > 0}
         render={() => (
@@ -144,7 +270,7 @@ export default function FormBuilder() {
               <div className="overflow-y-auto flex-1 ">
                 <FormFieldList
                   formFields={formFields}
-                  setFormFields={setFormFields}
+                  setFormFields={handleFormFieldsSet}
                   updateFormField={updateFormField}
                   openEditDialog={openEditDialog}
                 />
