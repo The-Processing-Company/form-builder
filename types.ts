@@ -38,6 +38,7 @@ export type FormFieldType = {
   fontSizePt?: number
   bold?: boolean
   italic?: boolean
+  underline?: boolean
 }
 
 export type FieldType = { name: string; isNew: boolean; index?: number }
@@ -68,6 +69,7 @@ export interface StoredForm {
   createdAt: number
   updatedAt: number
   description?: string
+  contextInputs?: { name: string; type: 'string' | 'number' | 'boolean' | 'object' | 'array'; itemType?: 'string' | 'number' | 'boolean' }[]
 }
 
 export interface FormMetadata {

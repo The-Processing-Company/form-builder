@@ -24,6 +24,7 @@ export default function FormBuilder({ formId, filename }: FormBuilderProps) {
   const router = useRouter()
 
   const [formFields, setFormFields] = useState<FormFieldOrGroup[]>([])
+  const [contextInputs, setContextInputs] = useState<NonNullable<StoredForm['contextInputs']>>([])
 
   const [formName, setFormName] = useState(filename || 'Untitled Form')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -50,6 +51,7 @@ export default function FormBuilder({ formId, filename }: FormBuilderProps) {
       if (storedForm) {
         setFormFields(storedForm.fields)
         setFormName(storedForm.name)
+        setContextInputs(storedForm.contextInputs || [])
         setHasUnsavedChanges(false)
       } else {
         toast.error('Form not found')
@@ -75,7 +77,8 @@ export default function FormBuilder({ formId, filename }: FormBuilderProps) {
     try {
       const formData = {
         name: formName.trim(),
-        fields: formFields
+        fields: formFields,
+        contextInputs
       }
 
       let updatedForm: StoredForm
@@ -107,6 +110,11 @@ export default function FormBuilder({ formId, filename }: FormBuilderProps) {
 
   const handleFormChange = (newFields: FormFieldOrGroup[]) => {
     setFormFields(newFields)
+    setHasUnsavedChanges(true)
+  }
+
+  const handleContextInputsChange = (next: NonNullable<StoredForm['contextInputs']>) => {
+    setContextInputs(next)
     setHasUnsavedChanges(true)
   }
 
@@ -171,6 +179,8 @@ export default function FormBuilder({ formId, filename }: FormBuilderProps) {
           hasUnsavedChanges={hasUnsavedChanges}
           onSave={handleSave}
           onFormNameChange={handleNameChange}
+          contextInputs={contextInputs}
+          onContextInputsChange={handleContextInputsChange}
         />
       </Box>
     </Box>

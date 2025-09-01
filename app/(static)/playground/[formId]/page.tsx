@@ -112,7 +112,7 @@ export default function PlaygroundPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center justify-center min-h-[50vh] w-full">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading form...</p>
@@ -123,7 +123,7 @@ export default function PlaygroundPage() {
 
   if (!form) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center justify-center min-h-[50vh] w-full">
         <div className="text-center">
           <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Form not found</h3>

@@ -191,6 +191,9 @@ importers:
       react-icons:
         specifier: ^5.3.0
         version: 5.4.0(react@19.1.0)
+      react-number-format:
+        specifier: ^5.4.4
+        version: 5.4.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react-phone-number-input:
         specifier: ^3.4.8
         version: 3.4.11(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -5290,8 +5293,8 @@ packages:
   react-is@19.1.1:
     resolution: {integrity: sha512-tr41fA15Vn8p4X9ntI+yCyeGSf1TlYaY5vlTZfQmeLBrFo3psOPX6HhTDnFNL9uj3EhP0KAQ80cugCl4b4BERA==}
 
-  react-number-format@5.4.3:
-    resolution: {integrity: sha512-VCY5hFg/soBighAoGcdE+GagkJq0230qN6jcS5sp8wQX1qy1fYN/RX7/BXkrs0oyzzwqR8/+eSUrqXbGeywdUQ==}
+  react-number-format@5.4.4:
+    resolution: {integrity: sha512-wOmoNZoOpvMminhifQYiYSTCLUDOiUbBunrMrMjA+dV52sY+vck1S4UhR6PkgnoCquvvMSeJjErXZ4qSaWCliA==}
     peerDependencies:
       react: ^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^0.14 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -7702,7 +7705,7 @@ snapshots:
       clsx: 2.1.1
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
-      react-number-format: 5.4.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      react-number-format: 5.4.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react-remove-scroll: 2.6.3(@types/react@19.1.6)(react@19.1.0)
       react-textarea-autosize: 8.5.6(@types/react@19.1.6)(react@19.1.0)
       type-fest: 4.33.0
@@ -12012,7 +12015,7 @@ snapshots:
 
   react-is@19.1.1: {}
 
-  react-number-format@5.4.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+  react-number-format@5.4.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)

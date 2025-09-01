@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from 'react'
-import { Eye, Code } from 'lucide-react'
+import { Eye, Code, GripVertical } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FormFieldType, FormFieldOrGroup, FormSchema, SchemaField } from '@/types'
 import { ComponentItem } from './component-palette'
@@ -10,6 +10,60 @@ import { FormFieldRenderer } from './form-field-renderer'
 import { CodeBlock } from '@/components/ui/code-block'
 import { useFormBuilderStore } from '@/store/formBuilderStore'
 import { generateNextOutputName } from '@/lib/field-names'
+import { Reorder, useDragControls, motion } from 'framer-motion'
+
+// Reorder wrapper with a local drag control and a shared handle UI
+const ReorderGroupItem: React.FC<{ value: FormFieldOrGroup; children: React.ReactNode }> = ({ value, children }) => {
+  const controls = useDragControls()
+  return (
+    <Reorder.Item
+      value={value}
+      dragListener={false}
+      dragControls={controls}
+      className="group"
+      whileDrag={{ scale: 1.01, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+    >
+      <div className="relative">
+        <button
+          type="button"
+          className="absolute -left-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing h-6 w-6 rounded-md border bg-background flex items-center justify-center"
+          onPointerDown={(e) => { e.stopPropagation(); controls.start(e) }}
+          aria-label="Drag group"
+          title="Drag to reorder"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        {children}
+      </div>
+    </Reorder.Item>
+  )
+}
+
+const ReorderSingleItem: React.FC<{ value: FormFieldOrGroup; children: React.ReactNode }> = ({ value, children }) => {
+  const controls = useDragControls()
+  return (
+    <Reorder.Item
+      value={value}
+      dragListener={false}
+      dragControls={controls}
+      className="group"
+      whileDrag={{ scale: 1.01, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+    >
+      <div className="relative">
+        <button
+          type="button"
+          className="absolute -left-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing h-6 w-6 rounded-md border bg-background flex items-center justify-center"
+          onPointerDown={(e) => { e.stopPropagation(); controls.start(e) }}
+          aria-label="Drag field"
+          title="Drag to reorder"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        {children}
+      </div>
+    </Reorder.Item>
+  )
+}
 
 interface FormCanvasProps {
   filename: string
@@ -31,6 +85,7 @@ export function FormCanvas({
   const { setSelectedField, selectByName } = useFormBuilderStore()
   const [viewMode, setViewMode] = useState<'design' | 'json'>('design')
   const canvasRef = useRef<HTMLDivElement>(null)
+  const [dragInsertIndex, setDragInsertIndex] = useState<number | null>(null)
 
   const addComponentToForm = useCallback((
     component: ComponentItem,
@@ -73,15 +128,24 @@ export function FormCanvas({
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.currentTarget.classList.add('border-primary', 'bg-accent/20')
-  }, [])
+    const dropY = e.clientY
+    const canvasRect = canvasRef.current?.getBoundingClientRect()
+    if (canvasRect) {
+      const relativeY = dropY - canvasRect.top
+      const idx = Math.max(0, Math.min(formFields.length, Math.floor(relativeY / 100)))
+      setDragInsertIndex(idx)
+    }
+  }, [formFields.length])
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.currentTarget.classList.remove('border-primary', 'bg-accent/20')
+    setDragInsertIndex(null)
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.currentTarget.classList.remove('border-primary', 'bg-accent/20')
+    setDragInsertIndex(null)
 
     try {
       const componentData = JSON.parse(
@@ -327,78 +391,104 @@ export function FormCanvas({
                   </div>
                 </div>
               ) : (
-                <div className="space-y-6 max-w-3xl mx-auto">
+                <Reorder.Group
+                  axis="y"
+                  values={formFields}
+                  onReorder={onFormChange}
+                  className="space-y-6 max-w-3xl mx-auto"
+                >
                   {formFields.map((field, index) => {
+                    const insertMarker = (
+                      dragInsertIndex === index ? (
+                        <div key={`marker_${index}`} className="h-2 -my-2">
+                          <motion.div layout className="h-0.5 bg-primary/60 rounded" />
+                        </div>
+                      ) : null
+                    )
                     if (Array.isArray(field)) {
                       return (
-                        <div key={`group_${index}`} className="grid grid-cols-12 gap-4">
-                          {field.map((subField) => {
-                            const isSelected = selectedField?.id === subField.id
-                            return (
-                              <div
-                                key={subField.id}
-                                className={`relative col-span-6 border rounded-md p-4 bg-card ${isSelected ? 'ring-2 ring-ring' : ''}`}
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  onFieldSelect(subField)
-                                }}
-                              >
-                                <div className="absolute -top-3 left-2 rounded-full border border-border bg-background shadow text-[10px] text-muted-foreground px-2 h-6 flex items-center gap-2">
-                                  <span className="capitalize">{(subField as FormFieldType).variant || (subField as FormFieldType).type}</span>
-                                  <span className="w-px h-3 bg-border" />
-                                  <span className="font-mono">{(subField as FormFieldType).name}</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  className="absolute -top-3 right-2 h-6 w-6 rounded-full border border-border bg-background shadow text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center"
-                                  title="Delete"
-                                  aria-label="Delete"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    onFieldDelete?.(subField.id)
-                                  }}
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
-                                </button>
-                                <FormFieldRenderer field={subField} />
-                              </div>
-                            )
-                          })}
-                        </div>
+                        <React.Fragment key={`frag_group_${index}`}>
+                          {insertMarker}
+                          <ReorderGroupItem value={field}>
+                            <div className="grid grid-cols-12 gap-4">
+                              {field.map((subField) => {
+                                const isSelected = selectedField?.id === subField.id
+                                return (
+                                  <div
+                                    key={subField.id}
+                                    className={`relative col-span-6 border rounded-md p-4 bg-card ${isSelected ? 'ring-2 ring-ring' : ''}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      onFieldSelect(subField)
+                                    }}
+                                  >
+                                    <div className="absolute -top-3 left-2 rounded-full border border-border bg-background shadow text-[10px] text-muted-foreground px-2 h-6 flex items-center gap-2">
+                                      <span className="capitalize">{(subField as FormFieldType).variant || (subField as FormFieldType).type}</span>
+                                      <span className="w-px h-3 bg-border" />
+                                      <span className="font-mono">{(subField as FormFieldType).name}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="absolute -top-3 right-2 h-6 w-6 rounded-full border border-border bg-background shadow text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center"
+                                      title="Delete"
+                                      aria-label="Delete"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        onFieldDelete?.(subField.id)
+                                      }}
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                    <FormFieldRenderer field={subField} />
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </ReorderGroupItem>
+                        </React.Fragment>
                       )
                     }
                     const isSelected = selectedField?.id === (field as FormFieldType).id
                     return (
-                      <div
-                        key={(field as FormFieldType).id}
-                        className={`relative border rounded-md p-4 bg-card ${isSelected ? 'ring-2 ring-ring' : ''}`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onFieldSelect(field as FormFieldType)
-                        }}
-                      >
-                        <div className="absolute -top-3 left-2 rounded-full border border-border bg-background shadow text-[10px] text-muted-foreground px-2 h-6 flex items-center gap-2">
-                          <span className="capitalize">{((field as FormFieldType).variant || (field as FormFieldType).type)}</span>
-                          <span className="w-px h-3 bg-border" />
-                          <span className="font-mono">{(field as FormFieldType).name}</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="absolute -top-3 right-2 h-6 w-6 rounded-full border border-border bg-background shadow text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center"
-                          title="Delete"
-                          aria-label="Delete"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onFieldDelete?.((field as FormFieldType).id)
-                          }}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
-                        </button>
-                        <FormFieldRenderer field={field as FormFieldType} />
-                      </div>
+                      <React.Fragment key={`frag_${(field as FormFieldType).id}`}>
+                        {insertMarker}
+                        <ReorderSingleItem value={field}>
+                          <div
+                            className={`relative border rounded-md p-4 bg-card ${isSelected ? 'ring-2 ring-ring' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onFieldSelect(field as FormFieldType)
+                            }}
+                          >
+                            <div className="absolute -top-3 left-2 rounded-full border border-border bg-background shadow text-[10px] text-muted-foreground px-2 h-6 flex items-center gap-2">
+                              <span className="capitalize">{((field as FormFieldType).variant || (field as FormFieldType).type)}</span>
+                              <span className="w-px h-3 bg-border" />
+                              <span className="font-mono">{(field as FormFieldType).name}</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="absolute -top-3 right-2 h-6 w-6 rounded-full border border-border bg-background shadow text-muted-foreground hover:text-destructive transition-colors flex items-center justify-center"
+                              title="Delete"
+                              aria-label="Delete"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onFieldDelete?.((field as FormFieldType).id)
+                              }}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a 2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                            <FormFieldRenderer field={field as FormFieldType} />
+                          </div>
+                        </ReorderSingleItem>
+                      </React.Fragment>
                     )
                   })}
-                </div>
+                  {dragInsertIndex === formFields.length ? (
+                    <div key={`marker_end`} className="h-2 -my-2">
+                      <motion.div layout className="h-0.5 bg-primary/60 rounded" />
+                    </div>
+                  ) : null}
+                </Reorder.Group>
               )}
             </div>
           </TabsContent>

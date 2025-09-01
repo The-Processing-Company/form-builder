@@ -13,7 +13,10 @@ import {
   Trash2,
   Trash,
   Copy,
-  Check
+  Check,
+  Bold,
+  Italic,
+  Underline
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -81,7 +84,7 @@ export function PropertiesPanel({
   formFields,
   formId
 }: PropertiesPanelProps) {
-  const { selectedField: storeSelected } = useFormBuilderStore()
+  const { selectedField: storeSelected, setSelectedField, selectById } = useFormBuilderStore()
   const activeField = storeSelected ?? selectedField
   const [customProperties, setCustomProperties] = useState<Array<{ key: string; value: string }>>([])
 
@@ -152,11 +155,31 @@ export function PropertiesPanel({
           </div>
         ) : (
           <div className="space-y-2">
-            {Array.from(componentCounts.entries()).map(([type, count]) => (
-              <div key={type} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                <span className="text-sm capitalize">{type}</span>
-                <Badge variant="outline" className="text-xs">{count}</Badge>
-              </div>
+            {/* Clickable flat list of fields */}
+            {formFields.map((entry, idx) => (
+              Array.isArray(entry) ? (
+                <div key={`group_${idx}`} className="space-y-1">
+                  {entry.map((f) => (
+                    <button
+                      key={f.id}
+                      className="w-full text-left p-2 rounded-md hover:bg-accent/50 flex items-center justify-between"
+                      onClick={() => { setSelectedField(f); }}
+                    >
+                      <span className="text-sm">{f.label || f.name}</span>
+                      <Badge variant="outline" className="text-xs capitalize">{f.type}</Badge>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <button
+                  key={entry.id}
+                  className="w-full text-left p-2 rounded-md hover:bg-accent/50 flex items-center justify-between"
+                  onClick={() => { setSelectedField(entry); }}
+                >
+                  <span className="text-sm">{entry.label || entry.name}</span>
+                  <Badge variant="outline" className="text-xs capitalize">{entry.type}</Badge>
+                </button>
+              )
             ))}
           </div>
         )}
@@ -481,7 +504,20 @@ export function PropertiesPanel({
             <div className="space-y-3">
               <div>
                 <Label className="text-xs">Variant</Label>
-                <Select value={(activeField as any).variant || 'paragraph'} onValueChange={(v) => onFieldUpdate({ variant: v } as any)}>
+                <Select value={(activeField as any).variant || 'paragraph'} onValueChange={(v) => {
+                  const next: any = { variant: v }
+                  // Reset styles on variant change
+                  if (v === 'heading' || v === 'sub-heading') {
+                    next.bold = true
+                    next.italic = false
+                    next.underline = false
+                  } else {
+                    next.bold = false
+                    next.italic = false
+                    next.underline = false
+                  }
+                  onFieldUpdate(next)
+                }}>
                   <SelectTrigger className="h-8 text-sm">
                     <SelectValue placeholder="Choose variant" />
                   </SelectTrigger>
@@ -493,31 +529,50 @@ export function PropertiesPanel({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-xs">Font size (pt)</Label>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant={(activeField as any).bold ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="h-7 w-7 p-0 font-serif"
+                    onClick={() => onFieldUpdate({ bold: !Boolean((activeField as any).bold) } as any)}
+                    title="Bold"
+                    aria-label="Bold"
+                  >
+                    <Bold className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={(activeField as any).italic ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="h-7 w-7 p-0 font-serif"
+                    onClick={() => onFieldUpdate({ italic: !Boolean((activeField as any).italic) } as any)}
+                    title="Italic"
+                    aria-label="Italic"
+                  >
+                    <Italic className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={(activeField as any).underline ? 'secondary' : 'outline'}
+                    size="sm"
+                    className="h-7 w-7 p-0 font-serif"
+                    onClick={() => onFieldUpdate({ underline: !Boolean((activeField as any).underline) } as any)}
+                    title="Underline"
+                    aria-label="Underline"
+                  >
+                    <Underline className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1 ml-auto">
+                  <Label className="text-xs">Size</Label>
                   <Input
                     type="number"
-                    className="h-8 text-sm"
+                    className="h-8 text-sm w-20"
                     value={activeField.fontSizePt ?? ''}
                     onChange={(e) => onFieldUpdate({ fontSizePt: e.target.value ? parseInt(e.target.value) : undefined } as any)}
-                    placeholder="e.g. 12"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Bold</Label>
-                  <Switch
-                    id="bold"
-                    checked={Boolean((activeField as any).bold)}
-                    onCheckedChange={(checked) => onFieldUpdate({ bold: checked } as any)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Italic</Label>
-                  <Switch
-                    id="italic"
-                    checked={Boolean((activeField as any).italic)}
-                    onCheckedChange={(checked) => onFieldUpdate({ italic: checked } as any)}
+                    placeholder="pt"
                   />
                 </div>
               </div>

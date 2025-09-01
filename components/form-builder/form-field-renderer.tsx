@@ -3,6 +3,7 @@
 import React from 'react'
 import { FormFieldType } from '@/types'
 import { Input } from '@/components/ui/input'
+import { NumberInput } from '@/components/number-input'
 import { PasswordInput } from '@/components/ui/password-input'
 import { PhoneInput } from '@/components/ui/phone-input'
 import { Textarea } from '@/components/ui/textarea'
@@ -164,11 +165,12 @@ export function FormFieldRenderer({ field }: FormFieldRendererProps) {
       return (
         <div className="w-full">
           <Label className="text-sm font-medium mb-2 block">{field.label || 'Number'}{field.required ? ' *' : ''}</Label>
-          <Input 
-            type="number" 
-            placeholder={field.placeholder || 'Enter number...'} 
+          <NumberInput
+            placeholder={field.placeholder || 'Enter number...'}
+            min={(field as any).min}
+            max={(field as any).max}
+            stepper={(field as any).step || 1}
             disabled={field.disabled}
-            className="w-full"
           />
         </div>
       )
@@ -341,18 +343,24 @@ export function FormFieldRenderer({ field }: FormFieldRendererProps) {
     case 'text-block': {
       const variant = (field as any).variant || 'paragraph'
       const content = (field.description || field.label || '').trim() || (variant === 'heading' ? 'Heading' : variant === 'sub-heading' ? 'Sub-heading' : variant === 'caption' ? 'Caption' : 'Paragraph')
+      const defaultBold = variant === 'heading' || variant === 'sub-heading'
+      const explicitBold = (field as any).bold
+      const isBold = explicitBold === undefined ? defaultBold : Boolean(explicitBold)
+      const isItalic = Boolean((field as any).italic)
+      const isUnderline = Boolean((field as any).underline)
       const style: React.CSSProperties = {
         fontSize: field.fontSizePt ? `${field.fontSizePt}pt` : undefined,
-        fontWeight: (field as any).bold ? 600 : undefined,
-        fontStyle: (field as any).italic ? 'italic' : undefined,
+        fontWeight: isBold ? 600 : 400,
+        fontStyle: isItalic ? 'italic' : 'normal',
+        textDecoration: isUnderline ? 'underline' : undefined,
       }
       return (
         <div className="w-full">
           {variant === 'heading' && (
-            <h2 className="text-2xl font-semibold" style={style}>{content}</h2>
+            <h2 className="text-2xl" style={style}>{content}</h2>
           )}
           {variant === 'sub-heading' && (
-            <h3 className="text-xl font-medium" style={style}>{content}</h3>
+            <h3 className="text-xl" style={style}>{content}</h3>
           )}
           {variant === 'caption' && (
             <p className="text-xs text-muted-foreground" style={style}>{content}</p>

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import { Box, Stack } from '@mui/system'
 import { ComponentPalette, ComponentItem } from './component-palette'
 import { FormCanvas } from './form-canvas'
 import { PropertiesPanel } from './properties-panel'
+import { ContextPanel } from './context-panel'
 import { FormFieldType, FormFieldOrGroup } from '@/types'
 import { useFormBuilderStore } from '@/store/formBuilderStore'
 import { generateNextOutputName } from '@/lib/field-names'
@@ -18,12 +19,16 @@ interface ModernFormBuilderProps {
   hasUnsavedChanges: boolean
   onSave: () => void
   onFormNameChange: (newName: string) => void
+  contextInputs: { name: string; type: 'string' | 'number' | 'boolean' | 'object' | 'array'; itemType?: 'string' | 'number' | 'boolean' }[]
+  onContextInputsChange: (next: { name: string; type: 'string' | 'number' | 'boolean' | 'object' | 'array'; itemType?: 'string' | 'number' | 'boolean' }[]) => void
 }
 
-export function ModernFormBuilder({ formFields, onFormChange, formId, filename, formName, hasUnsavedChanges, onSave, onFormNameChange }: ModernFormBuilderProps) {
-  const { setFormFields, selectedField, setSelectedField } = useFormBuilderStore()
+export function ModernFormBuilder({ formFields, onFormChange, formId, filename, formName, hasUnsavedChanges, onSave, onFormNameChange, contextInputs, onContextInputsChange }: ModernFormBuilderProps) {
+  const { setFormFields, selectedField, setSelectedField, setContextInputs } = useFormBuilderStore()
+  const [rightPanel, setRightPanel] = React.useState<'properties' | 'context'>('context')
 
   useEffect(() => { setFormFields(formFields) }, [formFields, setFormFields])
+  useEffect(() => { setContextInputs(contextInputs) }, [contextInputs, setContextInputs])
 
   const handleComponentSelect = useCallback((component: ComponentItem) => {
     // Add component to form
@@ -56,6 +61,7 @@ export function ModernFormBuilder({ formFields, onFormChange, formId, filename, 
 
   const handleFieldSelect = useCallback((field: FormFieldType | null) => {
     setSelectedField(field)
+    if (field) setRightPanel('properties')
   }, [setSelectedField])
 
   const handleFieldUpdate = useCallback((updates: Partial<FormFieldType>) => {
@@ -130,17 +136,35 @@ export function ModernFormBuilder({ formFields, onFormChange, formId, filename, 
         />
       </Box>
 
-      {/* Right Panel - Properties */}
-      <Box sx={{ width: 320, flexShrink: 0, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }} className="border-l border-border">
+      {/* Right Panel - Properties/Context toggle */}
+      <Box sx={{ width: 360, flexShrink: 0, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }} className="border-l border-border">
+        <div className="flex items-center gap-2 p-2 border-b">
+          <button
+            className={`px-2 py-1 rounded text-xs ${rightPanel === 'properties' ? 'bg-accent' : 'hover:bg-accent/40'}`}
+            onClick={() => setRightPanel('properties')}
+          >
+            Properties
+          </button>
+          <button
+            className={`px-2 py-1 rounded text-xs ${rightPanel === 'context' ? 'bg-accent' : 'hover:bg-accent/40'}`}
+            onClick={() => setRightPanel('context')}
+          >
+            Context
+          </button>
+        </div>
         <Box sx={{ height: '100%', minHeight: 0 }}>
-          <PropertiesPanel
-            selectedField={selectedField}
-            onFieldUpdate={handleFieldUpdate}
-            onFieldDelete={handleFieldDelete}
-            onBackClick={handleBackClick}
-            formFields={formFields}
-            formId={formId}
-          />
+          {rightPanel === 'properties' ? (
+            <PropertiesPanel
+              selectedField={selectedField}
+              onFieldUpdate={handleFieldUpdate}
+              onFieldDelete={handleFieldDelete}
+              onBackClick={handleBackClick}
+              formFields={formFields}
+              formId={formId}
+            />
+          ) : (
+            <ContextPanel formName={formName} formFields={formFields as any} />
+          )}
         </Box>
       </Box>
     </Stack>
