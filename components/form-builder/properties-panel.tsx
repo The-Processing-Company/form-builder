@@ -226,16 +226,18 @@ export function PropertiesPanel({
               />
             </div>
             
-            <div>
-              <Label htmlFor="name" className="text-xs">Name</Label>
-              <Input
-                id="name"
-                value={activeField.name || ''}
-                onChange={(e) => onFieldUpdate({ name: e.target.value })}
-                placeholder="Enter field name"
-                className="h-8 text-sm"
-              />
-            </div>
+            {!(activeField.type === 'text-block' || activeField.type === 'divider' || activeField.type === 'spacer') && (
+              <div>
+                <Label htmlFor="name" className="text-xs">Name</Label>
+                <Input
+                  id="name"
+                  value={activeField.name || ''}
+                  onChange={(e) => onFieldUpdate({ name: e.target.value })}
+                  placeholder="Enter field name"
+                  className="h-8 text-sm"
+                />
+              </div>
+            )}
             
             <div>
               <Label htmlFor="description" className="text-xs">Description</Label>
@@ -629,7 +631,7 @@ export function PropertiesPanel({
 
   return (
     <TooltipProvider>
-    <div className="w-full h-full flex flex-col border-l border-border">
+    <div className="w-full flex flex-col border-l border-border">
       <div className="border-b border-border">
         <div className="p-4">
           <h3 className="font-semibold text-sm">Properties</h3>

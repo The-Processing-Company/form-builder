@@ -1,16 +1,18 @@
 'use client'
 
-import React, { useState, useRef, useCallback } from 'react'
-import { Eye, Code, GripVertical } from 'lucide-react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
+import { Eye, Code, GripVertical, Play } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FormFieldType, FormFieldOrGroup, FormSchema, SchemaField } from '@/types'
 import { ComponentItem } from './component-palette'
-import { FormDesigner } from '@/components/form-renderer'
+import { FormDesigner, FormRenderer } from '@/components/form-renderer'
 import { FormFieldRenderer } from './form-field-renderer'
 import { CodeBlock } from '@/components/ui/code-block'
 import { useFormBuilderStore } from '@/store/formBuilderStore'
 import { generateNextOutputName } from '@/lib/field-names'
 import { Reorder, useDragControls, motion } from 'framer-motion'
+import { buildFormContext } from '@/lib/form-context'
+import { Box } from '@mui/system'
 
 // Reorder wrapper with a local drag control and a shared handle UI
 const ReorderGroupItem: React.FC<{ value: FormFieldOrGroup; children: React.ReactNode }> = ({ value, children }) => {
@@ -67,6 +69,7 @@ const ReorderSingleItem: React.FC<{ value: FormFieldOrGroup; children: React.Rea
 
 interface FormCanvasProps {
   filename: string
+  formName: string
   formFields: FormFieldOrGroup[]
   onFormChange: (fields: FormFieldOrGroup[]) => void
   selectedField: FormFieldType | null
@@ -76,16 +79,18 @@ interface FormCanvasProps {
 
 export function FormCanvas({
   filename,
+  formName,
   formFields,
   onFormChange,
   selectedField,
   onFieldSelect,
   onFieldDelete,
 }: FormCanvasProps) {
-  const { setSelectedField, selectByName } = useFormBuilderStore()
-  const [viewMode, setViewMode] = useState<'design' | 'json'>('design')
+  const { setSelectedField, selectByName, contextInputs } = useFormBuilderStore()
+  const [viewMode, setViewMode] = useState<'design' | 'preview' | 'json'>('design')
   const canvasRef = useRef<HTMLDivElement>(null)
   const [dragInsertIndex, setDragInsertIndex] = useState<number | null>(null)
+  const [submittedData, setSubmittedData] = useState<Record<string, any> | null>(null)
 
   const addComponentToForm = useCallback((
     component: ComponentItem,
@@ -253,7 +258,7 @@ export function FormCanvas({
     )
   }
 
-  // Map current builder state to simplified schema for designer preview
+  // Map current builder state to simplified schema for designer/preview
   const toSchema = (): FormSchema => {
     const items: { name: string; fields: SchemaField[] }[] = []
     let buffer: SchemaField[] = []
@@ -265,32 +270,14 @@ export function FormCanvas({
         }
         items.push({
           name: `Group ${idx + 1}`,
-          fields: entry.map((f) => ({
-            name: f.name,
-            type: mapVariantToType(f.variant || f.type),
-            label: f.label,
-            placeholder: f.placeholder,
-            description: f.description,
-            required: f.required,
-            disabled: f.disabled,
-            options: f.options,
-          })),
+          fields: entry.map((f) => mapToSchemaField(f)),
         })
       } else {
-        buffer.push({
-          name: entry.name,
-          type: mapVariantToType(entry.variant || entry.type),
-          label: entry.label,
-          placeholder: entry.placeholder,
-          description: entry.description,
-          required: entry.required,
-          disabled: entry.disabled,
-          options: (entry as any).options,
-        })
+        buffer.push(mapToSchemaField(entry))
       }
     })
     if (buffer.length) {
-      items.push({ name: 'Fields', fields: buffer })
+      items.push({ name: '', fields: buffer })
     }
     return { name: 'Form', fields: items }
   }
@@ -300,9 +287,15 @@ export function FormCanvas({
       case 'Input':
       case 'Text':
       case 'TextField':
+      case 'input':
+      case 'text':
         return 'text'
       case 'Textarea':
+      case 'textarea':
         return 'textarea'
+      case 'number':
+      case 'Number':
+        return 'number'
       case 'password':
       case 'Password':
         return 'password'
@@ -317,10 +310,15 @@ export function FormCanvas({
       case 'Smart DateTime':
         return 'smart-datetime'
       case 'Checkbox':
+      case 'checkbox':
         return 'checkbox'
+      case 'checkbox-group':
+        return 'checkbox-group'
       case 'Switch':
+      case 'switch':
         return 'switch'
       case 'Select':
+      case 'select':
         return 'select'
       case 'file-input':
       case 'File Upload':
@@ -341,33 +339,98 @@ export function FormCanvas({
       case 'tags-input':
         return 'tags'
       case 'RadioGroup':
+      case 'radio-group':
+      case 'radio':
         return 'radio'
       case 'Slider':
+      case 'slider':
         return 'slider'
+      case 'Rating':
+      case 'rating':
+        return 'rating'
       default:
         return 'text'
     }
   }
 
+  const isDisplayOnly = (t: string) => t === 'text-block' || t === 'divider' || t === 'spacer'
+
+  const mapToSchemaField = (f: any): SchemaField => {
+    if (f.type === 'text-block') {
+      return {
+        name: f.name,
+        type: 'display',
+        label: f.label,
+        description: f.description,
+        disabled: f.disabled,
+        displayVariant: (f as any).variant || 'paragraph',
+        fontSizePt: (f as any).fontSizePt,
+        bold: (f as any).bold,
+        italic: (f as any).italic,
+        underline: (f as any).underline,
+      } as any
+    }
+    if (f.type === 'divider') {
+      return { name: f.name, type: 'divider', label: f.label } as any
+    }
+    if (f.type === 'spacer') {
+      return { name: f.name, type: 'spacer', label: f.label } as any
+    }
+    const baseType = mapVariantToType(f.variant || f.type)
+    const needsOptions = baseType === 'select' || baseType === 'radio' || baseType === 'multiselect' || baseType === 'checkbox-group'
+    const defaultOpts = [
+      { label: 'Option 1', value: 'option1' },
+      { label: 'Option 2', value: 'option2' },
+      { label: 'Option 3', value: 'option3' },
+    ]
+    const options = needsOptions ? ((Array.isArray(f.options) && f.options.length) ? f.options : defaultOpts) : undefined
+    return {
+      name: f.name,
+      type: baseType,
+      label: f.label,
+      placeholder: f.placeholder,
+      description: f.description,
+      required: f.required,
+      disabled: f.disabled,
+      options,
+      accept: (f as any).accept,
+      maxFiles: (f as any).maxFiles,
+      maxSizeMb: (f as any).maxSizeMb,
+      min: f.min,
+      max: f.max,
+      step: f.step,
+    }
+  }
+
+  // Build runtime context for preview
+  const runtimeCtx = useMemo(() => buildFormContext(formName, formFields as any, contextInputs), [formName, formFields, contextInputs])
+
   return (
     <div className="w-full flex flex-col pb-8">
       {/* Canvas Header */}
-      <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center justify-between">
         <Tabs
           value={viewMode}
           onValueChange={(value) => setViewMode(value as 'design' | 'json')}
-          className="flex-1 flex flex-col"
+          className="flex-1 flex flex-col w-full"
         >
-          <TabsList className="grid w-full grid-cols-2">
+          <Box className="p-2 border-b border-border">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="design" className="flex items-center gap-2">
               <Eye className="w-4 h-4" />
               Design
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="flex items-center gap-2">
+              <Play className="w-4 h-4" />
+              Preview
             </TabsTrigger>
             <TabsTrigger value="json" className="flex items-center gap-2">
               <Code className="w-4 h-4" />
               JSON
             </TabsTrigger>
           </TabsList>
+
+          </Box>
           <TabsContent value="design" className="flex-1 min-h-0 overflow-auto">
             <div
               ref={canvasRef}
@@ -424,8 +487,12 @@ export function FormCanvas({
                                   >
                                     <div className="absolute -top-3 left-2 rounded-full border border-border bg-background shadow text-[10px] text-muted-foreground px-2 h-6 flex items-center gap-2">
                                       <span className="capitalize">{(subField as FormFieldType).variant || (subField as FormFieldType).type}</span>
-                                      <span className="w-px h-3 bg-border" />
-                                      <span className="font-mono">{(subField as FormFieldType).name}</span>
+                                      {!(subField as FormFieldType).type.match(/^(text-block|divider|spacer)$/) && (
+                                        <>
+                                          <span className="w-px h-3 bg-border" />
+                                          <span className="font-mono">{(subField as FormFieldType).name}</span>
+                                        </>
+                                      )}
                                     </div>
                                     <button
                                       type="button"
@@ -462,8 +529,12 @@ export function FormCanvas({
                           >
                             <div className="absolute -top-3 left-2 rounded-full border border-border bg-background shadow text-[10px] text-muted-foreground px-2 h-6 flex items-center gap-2">
                               <span className="capitalize">{((field as FormFieldType).variant || (field as FormFieldType).type)}</span>
-                              <span className="w-px h-3 bg-border" />
-                              <span className="font-mono">{(field as FormFieldType).name}</span>
+                              {!((field as FormFieldType).type.match(/^(text-block|divider|spacer)$/)) && (
+                                <>
+                                  <span className="w-px h-3 bg-border" />
+                                  <span className="font-mono">{(field as FormFieldType).name}</span>
+                                </>
+                              )}
                             </div>
                             <button
                               type="button"
@@ -477,7 +548,7 @@ export function FormCanvas({
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a 2 2 0 0 1 2 2v2"/></svg>
                             </button>
-                            <FormFieldRenderer field={field as FormFieldType} />
+                            <FormFieldRenderer field={(field as FormFieldType)} />
                           </div>
                         </ReorderSingleItem>
                       </React.Fragment>
@@ -493,8 +564,25 @@ export function FormCanvas({
             </div>
           </TabsContent>
           
+          <TabsContent value="preview" className="flex-1 min-h-0 overflow-auto">
+            <div className="mx-auto space-y-6">
+              <div className="p-4">
+                <FormRenderer
+                  schema={toSchema()}
+                  onSubmit={(data) => setSubmittedData(data)}
+                  context={runtimeCtx}
+                />
+              </div>
+              {submittedData && (
+                <div className="rounded-md border">
+                  <CodeBlock language="json" code={JSON.stringify(submittedData, null, 2)} filename={`${filename}.submitted.json`} onSelection={() => {}} />
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
           <TabsContent value="json" className="flex-1 min-h-0 overflow-hidden">
-            <div className="h-full min-h-0 overflow-auto p-4">
+            <div className="h-full min-h-0 overflow-auto p-2">
               {renderJSONView()}
             </div>
           </TabsContent>

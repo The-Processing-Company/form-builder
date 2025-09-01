@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable react-hooks/rules-of-hooks */
 
 import React from 'react'
 import { FormFieldType } from '@/types'
@@ -35,6 +36,7 @@ import { Calendar as DateCalendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
 import { ChevronDownIcon } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 
 interface FormFieldRendererProps {
   field: FormFieldType
@@ -43,10 +45,10 @@ interface FormFieldRendererProps {
 const MultiSelectPreview: React.FC<{ field: FormFieldType }> = ({ field }) => {
   const [values, setValues] = React.useState<string[]>([])
   const options = field.options || [
-    { label: 'React', value: 'react' },
-    { label: 'Vue', value: 'vue' },
-    { label: 'Svelte', value: 'svelte' },
-    { label: 'Angular', value: 'angular' },
+    { label: 'Option 1', value: 'option1' },
+    { label: 'Option 2', value: 'option2' },
+    { label: 'Option 3', value: 'option3' },
+    { label: 'Option 4', value: 'option4' },
   ]
   return (
     <div className="w-full">
@@ -304,16 +306,20 @@ export function FormFieldRenderer({ field }: FormFieldRendererProps) {
       return (
         <div className="w-full space-y-2">
           <Label className="text-sm font-medium block">{field.label || 'Radio Group'}{field.required ? ' *' : ''}</Label>
-          {(field.options || [
-            { label: 'Option 1', value: 'option1' },
-            { label: 'Option 2', value: 'option2' },
-            { label: 'Option 3', value: 'option3' },
-          ]).map((opt, index) => (
-            <div key={opt.value || index} className="flex items-center space-x-2">
-              <div className="w-4 h-4 border rounded-full bg-primary"></div>
-              <Label className="text-sm">{opt.label}</Label>
-            </div>
-          ))}
+          <RadioGroup value={''} onValueChange={() => {}}>
+            {(field.options || [
+              { label: 'Option 1', value: 'option1' },
+              { label: 'Option 2', value: 'option2' },
+              { label: 'Option 3', value: 'option3' },
+            ]).map((opt) => (
+              <div key={opt.value} className="flex items-center gap-2">
+                <RadioGroupItem id={`designer-${field.name}-${opt.value}`} value={opt.value} disabled={false} />
+                <label htmlFor={`designer-${field.name}-${opt.value}`} className="text-sm">
+                  {opt.label}
+                </label>
+              </div>
+            ))}
+          </RadioGroup>
         </div>
       )
     case 'checkbox-group': {

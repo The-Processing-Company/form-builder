@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { HeadlessFieldApi, FieldTypeKey } from '@/types'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
@@ -20,10 +20,13 @@ import { MultiSelector, MultiSelectorContent, MultiSelectorInput, MultiSelectorI
 import { TagsInput } from '@/components/ui/tags-input'
 import { Rating as UIRating } from '@/components/ui/rating'
 import { SmartDatetimeInput } from '@/components/ui/smart-datetime-input'
+import { DatetimePicker } from '@/components/ui/datetime-picker'
 import LocationSelector from '@/components/ui/location-input'
 import SignatureInput from '@/components/ui/signature-input'
 import { CreditCard, CreditCardValue } from '@/components/ui/credit-card'
 import { FileUploader, FileUploaderContent, FileUploaderItem } from '@/components/ui/file-upload'
+import { NumberInput } from '@/components/number-input'
+import { Separator } from '@/components/ui/separator'
 
 export type FieldRendererMode = 'designer' | 'renderer'
 
@@ -41,6 +44,12 @@ export const FieldRenderer = (props: FieldRendererProps) => {
     error?: string
   }
 
+  const ctx = (field as any).ctx
+
+  // Keep last committed value to safely merge complex structures (e.g., location)
+  const lastValueRef = React.useRef<any>(value)
+  React.useEffect(() => { lastValueRef.current = value }, [value])
+
   const common: any = {
     placeholder: field.placeholder,
     disabled: field.disabled,
@@ -55,7 +64,36 @@ export const FieldRenderer = (props: FieldRendererProps) => {
 
   const [dateOpen, setDateOpen] = React.useState(false)
 
-  switch (field.type as FieldTypeKey) {
+  switch (field.type as FieldTypeKey | 'display') {
+    case 'display': {
+      // Simple text display component with $ctx expression support in description
+      const raw = String(field.description || field.label || '')
+      const resolveCtx = (expr: string) => {
+        try {
+          // Support dot-path after $ctx.
+          const path = expr.replace(/^\$ctx\.?/, '')
+          if (!path) return JSON.stringify(ctx)
+          return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), ctx)
+        } catch {
+          return undefined
+        }
+      }
+      const text = raw.replace(/\$ctx(?:\.[A-Za-z0-9_$.]+)?/g, (m) => {
+        const v = resolveCtx(m)
+        return v === undefined || v === null ? '' : String(v)
+      })
+      const style: React.CSSProperties = {
+        fontSize: (field as any).fontSizePt ? `${(field as any).fontSizePt}pt` : undefined,
+        fontWeight: (field as any).bold ? 600 : 400,
+        fontStyle: (field as any).italic ? 'italic' : 'normal',
+        textDecoration: (field as any).underline ? 'underline' : undefined,
+      }
+      const variant = (field as any).displayVariant || 'paragraph'
+      if (variant === 'heading') return <h2 className="text-2xl" style={style}>{text || 'Heading'}</h2>
+      if (variant === 'sub-heading') return <h3 className="text-xl" style={style}>{text || 'Sub-heading'}</h3>
+      if (variant === 'caption') return <p className="text-xs text-muted-foreground" style={style}>{text || 'Caption'}</p>
+      return <p className="text-sm" style={style}>{text || 'Paragraph'}</p>
+    }
     case 'date': {
       const selected = typeof value === 'string' && value ? new Date(value as string) : undefined
       const labelText = selected ? selected.toLocaleDateString() : (field.placeholder || 'Select date')
@@ -107,7 +145,14 @@ export const FieldRenderer = (props: FieldRendererProps) => {
               {field.required ? ' *' : ''}
             </label>
           )}
-          <Input {...common} type="number" value={typeof value === 'number' ? String(value) : ''} onChange={(e) => handleChange(Number(e.target.value))} />
+          <NumberInput
+            value={typeof value === 'number' ? (value as number) : undefined}
+            onValueChange={(n) => handleChange(typeof n === 'number' ? n : 0)}
+            min={(field as any).min}
+            max={(field as any).max}
+            stepper={(field as any).step || 1}
+            placeholder={field.placeholder}
+          />
           {field.description && <p className="text-[0.8rem] text-muted-foreground mt-1">{field.description}</p>}
           {error && <p className="text-[0.8rem] font-medium text-destructive mt-1">{error}</p>}
         </div>
@@ -122,7 +167,10 @@ export const FieldRenderer = (props: FieldRendererProps) => {
             </label>
           )}
           <div className="space-y-2">
-            {(field.options ?? []).map((opt: {label: string; value: string}) => {
+            {((field.options && field.options.length > 0) ? field.options : [
+              { label: 'Option 1', value: 'option1' },
+              { label: 'Option 2', value: 'option2' },
+            ]).map((opt: {label: string; value: string}) => {
               const checked = Array.isArray(value) ? (value as string[]).includes(opt.value) : false
               return (
                 <label key={opt.value} className="flex items-center gap-2 text-sm">
@@ -159,6 +207,19 @@ export const FieldRenderer = (props: FieldRendererProps) => {
       )
     }
     case 'text':
+      return (
+        <div>
+          {field.label && (
+            <label className="block text-sm font-medium mb-1">
+              {field.label}
+              {field.required ? ' *' : ''}
+            </label>
+          )}
+          <Input {...common} value={(value as string) ?? ''} onChange={(e) => handleChange((e.target as HTMLInputElement).value)} />
+          {field.description && <p className="text-[0.8rem] text-muted-foreground mt-1">{field.description}</p>}
+          {error && <p className="text-[0.8rem] font-medium text-destructive mt-1">{error}</p>}
+        </div>
+      )
     case 'password':
       return (
         <div>
@@ -188,7 +249,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
         </div>
       )
     case 'datetime': {
-      const selected = typeof value === 'string' && value ? new Date(value as string) : null
+      const selected = typeof value === 'string' && value ? new Date(value as string) : undefined
       return (
         <div>
           {field.label && (
@@ -197,7 +258,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
               {field.required ? ' *' : ''}
             </label>
           )}
-          <SmartDatetimeInput value={selected} onValueChange={(d) => handleChange(d ? (d as Date).toISOString() : '')} hour12={false} />
+          <DatetimePicker value={selected} onChange={(d) => handleChange(d ? (d as Date).toISOString() : '')} format={[['months','days','years'],['hours','minutes']]} dtOptions={{ hour12: false }} />
           {field.description && <p className="text-[0.8rem] text-muted-foreground mt-1">{field.description}</p>}
           {error && <p className="text-[0.8rem] font-medium text-destructive mt-1">{error}</p>}
         </div>
@@ -227,6 +288,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
             </label>
           )}
           <FileUploader value={(value as File[] | null) ?? null} onValueChange={(files: File[] | null) => handleChange(files ?? [])} dropzoneOptions={{ maxFiles: 5, multiple: true }}>
+            <div className="border rounded-md p-4 text-sm text-muted-foreground">Drop files here or click to upload</div>
             <FileUploaderContent>
               {(Array.isArray(value) ? (value as File[]) : []).map((_, i) => (
                 <FileUploaderItem key={i} index={i} />
@@ -237,7 +299,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
           {error && <p className="text-[0.8rem] font-medium text-destructive mt-1">{error}</p>}
         </div>
       )
-    case 'location':
+    case 'location': {
       return (
         <div>
           {field.label && (
@@ -246,11 +308,26 @@ export const FieldRenderer = (props: FieldRendererProps) => {
               {field.required ? ' *' : ''}
             </label>
           )}
-          <LocationSelector disabled={field.disabled} onCountryChange={(c) => handleChange({ ...(value as any), country: c?.name })} onStateChange={(s) => handleChange({ ...(value as any), state: s?.name })} />
+          <LocationSelector
+            disabled={field.disabled}
+            onCountryChange={(c) => {
+              const prev = (lastValueRef.current && typeof lastValueRef.current === 'object') ? lastValueRef.current : {}
+              const next = { ...prev, country: c?.name, state: undefined }
+              lastValueRef.current = next
+              handleChange(next)
+            }}
+            onStateChange={(s) => {
+              const prev = (lastValueRef.current && typeof lastValueRef.current === 'object') ? lastValueRef.current : {}
+              const next = { ...prev, state: s?.name }
+              lastValueRef.current = next
+              handleChange(next)
+            }}
+          />
           {field.description && <p className="text-[0.8rem] text-muted-foreground mt-1">{field.description}</p>}
           {error && <p className="text-[0.8rem] font-medium text-destructive mt-1">{error}</p>}
         </div>
       )
+    }
     case 'signature':
       return (
         <div>
@@ -307,11 +384,7 @@ export const FieldRenderer = (props: FieldRendererProps) => {
     case 'switch':
       return (
         <div className="flex flex-col">
-          <div className="flex flex-row items-center gap-3">
-            <Switch field={field as HeadlessFieldApi<'switch'>} />
-            {field.label && <span className="text-sm">{field.label}{field.required ? ' *' : ''}</span>}
-          </div>
-          {field.description && <span className="text-[0.8rem] text-muted-foreground mt-1">{field.description}</span>}
+          <Switch field={field as HeadlessFieldApi<'switch'>} variant="inline" />
           {error && <span className="text-[0.8rem] font-medium text-destructive mt-1">{error}</span>}
         </div>
       )
@@ -418,6 +491,14 @@ export const FieldRenderer = (props: FieldRendererProps) => {
           {error && <p className="text-[0.8rem] font-medium text-destructive mt-1">{error}</p>}
         </div>
       )
+    case 'divider':
+      return (
+        <div className="w-full py-2">
+          <Separator />
+        </div>
+      )
+    case 'spacer':
+      return <div className="w-full h-6" />
     default:
       return (
         <div>

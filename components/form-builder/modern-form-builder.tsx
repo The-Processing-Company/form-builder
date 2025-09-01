@@ -112,7 +112,7 @@ export function ModernFormBuilder({ formFields, onFormChange, formId, filename, 
   }, [formFields, onFormChange, setSelectedField])
 
   return (
-    <Stack direction="row" sx={{ height: '100%', minHeight: 0, width: '100%', overflow: 'hidden' }} className="w-full h-full border-t">
+    <Stack direction="row" sx={{ height: '100%', minHeight: 0, width: '100%', overflow: 'hidden' }} className="w-full max-w-screen h-full border-t">
       {/* Left Panel - Component Palette */}
       <Box sx={{ width: 320, flexShrink: 0, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }} className="border-r border-border h-full">        
           <ComponentPalette 
@@ -128,6 +128,7 @@ export function ModernFormBuilder({ formFields, onFormChange, formId, filename, 
       <Box sx={{ flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto' }}>
         <FormCanvas
           filename={filename}
+          formName={formName}
           formFields={formFields}
           onFormChange={onFormChange}
           selectedField={selectedField}
@@ -138,6 +139,7 @@ export function ModernFormBuilder({ formFields, onFormChange, formId, filename, 
 
       {/* Right Panel - Properties/Context toggle */}
       <Box sx={{ width: 360, flexShrink: 0, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }} className="border-l border-border">
+          <Box sx={{ height: '100%', minHeight: 0 }}>
         <div className="flex items-center gap-2 p-2 border-b">
           <button
             className={`px-2 py-1 rounded text-xs ${rightPanel === 'properties' ? 'bg-accent' : 'hover:bg-accent/40'}`}
@@ -152,7 +154,6 @@ export function ModernFormBuilder({ formFields, onFormChange, formId, filename, 
             Context
           </button>
         </div>
-        <Box sx={{ height: '100%', minHeight: 0 }}>
           {rightPanel === 'properties' ? (
             <PropertiesPanel
               selectedField={selectedField}

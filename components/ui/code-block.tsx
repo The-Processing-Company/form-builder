@@ -114,7 +114,7 @@ export const CodeBlock = ({
   }, [activeTab, tabsExist, code, onSelection, tabs]);
 
   return (
-    <div ref={containerRef} className="relative w-full rounded-lg bg-slate-900 p-4 font-mono text-sm">
+    <div ref={containerRef} className="relative w-full rounded-lg bg-slate-900 p-4 font-mono text-sm overflow-x-auto">
       <div className="flex flex-col gap-2">
         {tabsExist && (
           <div className="flex  overflow-x-auto">

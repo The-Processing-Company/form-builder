@@ -110,6 +110,11 @@ export type FieldTypeKey =
   | 'location'
   | 'signature'
   | 'credit-card'
+  // Display-only text block used in preview; supports $ctx interpolation in description
+  | 'display'
+  // Layout-only elements
+  | 'divider'
+  | 'spacer'
 
 export type FieldValueFor<T extends FieldTypeKey> =
   T extends 'text' | 'textarea' | 'password' | 'phone' | 'date' | 'datetime' | 'select' | 'radio' ? string :
@@ -148,6 +153,16 @@ export interface SchemaField {
   maxSizeMb?: number
   // Optional default value
   defaultValue?: any
+  // Optional extras for display-only items
+  displayVariant?: 'heading' | 'sub-heading' | 'caption' | 'paragraph'
+  fontSizePt?: number
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+  // Optional numeric constraints
+  min?: number
+  max?: number
+  step?: number
 }
 
 // A logical group of fields. Groups can be used for future layout/features

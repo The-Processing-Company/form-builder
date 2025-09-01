@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { useFormBuilderStore } from '@/store/formBuilderStore'
 import { CodeBlock } from '@/components/ui/code-block'
+import { buildFormContext } from '@/lib/form-context'
 
 interface ContextPanelProps {
   formName: string
@@ -17,37 +18,7 @@ interface ContextPanelProps {
 export function ContextPanel({ formName, formFields }: ContextPanelProps) {
   const { contextInputs, addContextInput, updateContextInput, removeContextInput } = useFormBuilderStore()
 
-  const ctxObject = React.useMemo(() => {
-    return {
-      info: {
-        name: formName,
-      },
-      input: contextInputs.reduce<Record<string, any>>((acc, cur) => {
-        if (!cur.name) return acc
-        if (cur.type === 'array') {
-          const item = cur.itemType === 'number' ? 0 : cur.itemType === 'boolean' ? false : ''
-          acc[cur.name] = [item]
-        } else if (cur.type === 'object') {
-          acc[cur.name] = {}
-        } else if (cur.type === 'number') {
-          acc[cur.name] = 0
-        } else if (cur.type === 'boolean') {
-          acc[cur.name] = false
-        } else {
-          acc[cur.name] = ''
-        }
-        return acc
-      }, {}),
-      fields: formFields.reduce<Record<string, any>>((acc, f: any) => {
-        if (Array.isArray(f)) {
-          f.forEach((sf) => { acc[sf.name] = '' })
-        } else {
-          acc[f.name] = ''
-        }
-        return acc
-      }, {}),
-    }
-  }, [formName, formFields, contextInputs])
+  const ctxObject = React.useMemo(() => buildFormContext(formName, formFields, contextInputs), [formName, formFields, contextInputs])
 
   return (
     <div className="w-full h-full flex flex-col">

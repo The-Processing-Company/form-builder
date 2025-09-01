@@ -1,5 +1,7 @@
 import { FormFieldOrGroup, FormFieldType } from '@/types'
 
+const isDisplayOnly = (f: FormFieldType) => f.type === 'text-block' || f.type === 'divider' || f.type === 'spacer'
+
 export function generateNextOutputName(fields: FormFieldOrGroup[]): string {
   const names: string[] = []
   const collect = (arr: FormFieldOrGroup[]) => {
@@ -7,7 +9,8 @@ export function generateNextOutputName(fields: FormFieldOrGroup[]): string {
       if (Array.isArray(item)) {
         collect(item)
       } else {
-        names.push((item as FormFieldType).name)
+        const f = item as FormFieldType
+        if (!isDisplayOnly(f)) names.push(f.name)
       }
     }
   }

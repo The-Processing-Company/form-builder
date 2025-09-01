@@ -14,14 +14,16 @@ export interface FormRendererProps {
   onChange?: (data: Record<string, any>) => void
   onSubmit: (data: Record<string, any>) => void
   onReset?: () => void
+  context?: any
 }
 
-export const FormRenderer: React.FC<FormRendererProps> = ({ schema, initialValues, disabled, onChange, onSubmit, onReset }) => {
+export const FormRenderer: React.FC<FormRendererProps> = ({ schema, initialValues, disabled, onChange, onSubmit, onReset, context }) => {
   const [errors, setErrors] = useState<Record<string, string | undefined>>({})
   const defaultValues = useMemo(() => {
     const acc: Record<string, any> = {}
     schema.fields.forEach((item) => {
       item.fields.forEach((field) => {
+        if (['display', 'divider', 'spacer'].includes((field as any).type)) return
         const isBooleanControl = field.type === 'checkbox' || field.type === 'switch'
         let fallback: any = ''
         if (isBooleanControl) fallback = false
@@ -44,6 +46,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({ schema, initialValue
     const newErrors: Record<string, string | undefined> = {}
     schema.fields.forEach((item) => {
       item.fields.forEach((field) => {
+        if (['display', 'divider', 'spacer'].includes((field as any).type)) return
         if (field.required) {
           const v = (values as any)[field.name]
           let isEmpty =
@@ -110,8 +113,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({ schema, initialValue
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {schema.fields.map((item) => (
-          <div key={item.name} className="space-y-3">
-            <div className="text-sm font-medium text-muted-foreground">{item.name}</div>
+          <div key={item.name} className="">
             <div className="grid gap-3">
               {item.fields.map((field: SchemaField) => {
                 const api: HeadlessFieldApi = {
@@ -122,6 +124,8 @@ export const FormRenderer: React.FC<FormRendererProps> = ({ schema, initialValue
                     handleChange()
                   },
                   error: errors[field.name],
+                  // @ts-expect-error allow ctx for custom renderers like 'display'
+                  ctx: context,
                 }
                 return (
                   <FieldRenderer key={field.name} mode="renderer" field={api} />
