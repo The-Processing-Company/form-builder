@@ -6,8 +6,6 @@ import { toast } from 'sonner'
 import { ArrowLeft, Save, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import FormBuilder from '@/screens/form-builder'
 import { FormStorage } from '@/lib/form-storage'
 import { StoredForm, FormFieldOrGroup } from '@/types'
@@ -142,14 +140,12 @@ export default function PlaygroundPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 flex grow">
       {/* Form Builder */}
-      <div className="min-h-[calc(100vh-100px)]">
         <FormBuilder 
           formId={formId} 
           filename={formName}
         />
-      </div>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import Header from '@/components/header'
+import { Box } from '@mui/system'
 
 interface StaticLayoutProps {
   children: React.ReactNode
@@ -6,9 +7,18 @@ interface StaticLayoutProps {
 
 export default async function Layout({ children }: StaticLayoutProps) {
   return (
-    <main className="">
+    <Box
+      component="main"
+      className="flex flex-col h-dvh max-h-dvh overflow-hidden"
+    >
       <Header />
-      <div className="min-h-[calc(100vh-100px)] px-5 lg:px-0">{children}</div>
-    </main>
+      {/* Content area that grows and manages scroll inside */}
+      <div className="flex grow overflow-hidden px-5 lg:px-0">
+        {/* Allow horizontal scroll if needed, vertical scroll in inner panes */}
+        <div className="flex grow min-h-0 min-w-0 overflow-hidden w-full">
+          {children}
+        </div>
+      </div>
+    </Box>
   )
 }

@@ -102,13 +102,11 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
 
     const handleSelect = React.useCallback(
       (e: React.SyntheticEvent<HTMLInputElement>) => {
-        e.preventDefault()
         const target = e.currentTarget
-        const selection = target.value.substring(
-          target.selectionStart ?? 0,
-          target.selectionEnd ?? 0,
-        )
-
+        const start = target.selectionStart ?? 0
+        const end = target.selectionEnd ?? 0
+        if (start === end) return
+        const selection = target.value.substring(start, end)
         setSelectedValue(selection)
         setIsValueSelected(selection === inputValue)
       },
@@ -143,7 +141,7 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
 
     const handleKeyDown = React.useCallback(
       async (e: React.KeyboardEvent<HTMLInputElement>) => {
-        e.stopPropagation()
+        // Avoid stopping propagation so the browser IME and typing stay responsive
 
         const moveNext = () => {
           const nextIndex =
@@ -235,6 +233,7 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
 
     const handleChange = React.useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
+        // update state synchronously to avoid keystroke drops
         setInputValue(e.currentTarget.value)
       },
       [],
@@ -256,10 +255,7 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
           ref={ref}
           dir={dir}
           className={cn(
-            'flex items-center flex-wrap gap-1 p-1 rounded-lg bg-background overflow-hidden   ring-1 ring-muted  ',
-            {
-              'focus-within:ring-ring': activeIndex === -1,
-            },
+            'flex items-center flex-wrap gap-1 p-1 rounded-lg bg-background overflow-hidden ring-1 ring-muted focus-within:ring-ring',
             className,
           )}
         >
@@ -297,12 +293,11 @@ export const TagsInput = React.forwardRef<HTMLDivElement, TagsInputProps>(
             onPaste={handlePaste}
             value={inputValue}
             onSelect={handleSelect}
-            onChange={activeIndex === -1 ? handleChange : undefined}
+            onChange={handleChange}
             placeholder={placeholder}
             onClick={() => setActiveIndex(-1)}
             className={cn(
-              'outline-0 border-none h-7 min-w-fit flex-1 focus-visible:outline-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 placeholder:text-muted-foreground px-1',
-              activeIndex !== -1 && 'caret-transparent',
+              'outline-0 border-none h-7 min-w-fit flex-1 focus-visible:outline-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-0 placeholder:text-muted-foreground px-1'
             )}
           />
         </div>

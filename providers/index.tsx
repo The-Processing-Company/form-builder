@@ -8,10 +8,23 @@ import { OpenPanelComponent } from '@openpanel/nextjs'
 import { Analytics } from '@vercel/analytics/react'
 import { ThemeProvider } from './theme-provider'
 const AllProviders = ({ children }: { children: ReactNode }) => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY || '', {
       api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     })
+  }
+
+  if (!process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    return (
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        {children}
+      </ThemeProvider>
+    )
   }
 
   return (

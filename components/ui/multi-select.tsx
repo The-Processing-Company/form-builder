@@ -100,7 +100,6 @@ const MultiSelector = ({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
-      e.stopPropagation()
       const target = inputRef.current
 
       if (!target) return
@@ -296,7 +295,7 @@ const MultiSelectorInput = forwardRef<
         }
       }}
       value={inputValue}
-      onValueChange={activeIndex === -1 ? setInputValue : undefined}
+      onValueChange={setInputValue}
       onSelect={handleSelect}
       onBlur={() => setOpen(false)}
       onFocus={() => setOpen(true)}
@@ -304,7 +303,6 @@ const MultiSelectorInput = forwardRef<
       className={cn(
         'ml-2 bg-transparent outline-none placeholder:text-muted-foreground placeholder:text-sm flex-1',
         className,
-        activeIndex !== -1 && 'caret-transparent',
       )}
     />
   )

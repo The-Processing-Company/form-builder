@@ -80,7 +80,7 @@ export default function RootLayout({
             <NextTopLoader color="#FF9432" showSpinner={false} />
             <Toaster />
             <AllProviders>
-              <main className="min-h-[70vh]">{children}</main>
+              <main className="h-dvh max-h-dvh overflow-hidden flex flex-col">{children}</main>
             </AllProviders>
           </div>
         </body>

@@ -25,23 +25,9 @@ export const FieldSelector: React.FC<FieldSelectorProps> = ({
             size="sm"
           >
             {variant.name}
-            <If
-              condition={variant.isNew}
-              render={() => (
-                <Badge variant={'new'} className='md:hidden ml-1 p-1 text-[10px]'>
-                  New
-                </Badge>
-              )}
-            />
+            {/* New badge removed */}
           </Button>
-          <If
-            condition={variant.isNew}
-            render={() => (
-              <Badge variant={'new'} className='hidden md:block ml-1 p-1 text-[10px]'>
-                New
-              </Badge>
-            )}
-          />
+          {/* New badge removed */}
         </div>
       ))}
       <Link href="https://shadcnform.featurebase.app/" target="_blank">

@@ -21,7 +21,7 @@ type DateTimeFormatDefaults = [
 
 const DEFAULTS = [
   ['months', 'days', 'years'],
-  ['hours', 'minutes', 'am/pm'],
+  ['hours', 'minutes'], // 24-hour by default (no am/pm)
 ] as DateTimeFormatDefaults
 
 type TimescapeReturn = ReturnType<typeof useTimescape>
@@ -129,9 +129,10 @@ interface DateTimeInput {
   className?: string
 }
 
-const DEFAULT_TS_OPTIONS = {
+const DEFAULT_TS_OPTIONS: Options = {
   date: new Date(),
-  hour12: true,
+  hour12: false, // 24-hour by default
+  digits: '2-digit',
 }
 export const DatetimePicker = forwardRef<HTMLDivElement, DateTimeInput>(
   (
@@ -154,6 +155,7 @@ export const DatetimePicker = forwardRef<HTMLDivElement, DateTimeInput>(
     const timescape = useTimescape({
       date: value,
       onChangeDate: handleDateChange,
+      hour12: false,
       ...dtOptions,
     })
     return (
