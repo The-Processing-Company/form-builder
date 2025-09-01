@@ -406,7 +406,7 @@ export function FormCanvas({
   const runtimeCtx = useMemo(() => buildFormContext(formName, formFields as any, contextInputs), [formName, formFields, contextInputs])
 
   return (
-    <div className="w-full flex flex-col pb-8">
+    <div className="w-full flex flex-col">
       {/* Canvas Header */}
       <div className="flex items-center justify-between">
         <Tabs
@@ -564,9 +564,9 @@ export function FormCanvas({
             </div>
           </TabsContent>
           
-          <TabsContent value="preview" className="flex-1 min-h-0 overflow-auto">
-            <div className="mx-auto space-y-6">
-              <div className="p-4">
+          <TabsContent value="preview" className="h-full min-h-0 overflow-hidden">
+            <div className="h-full min-h-0 overflow-auto">
+              <div className="p-4 max-w-3xl mx-auto">
                 <FormRenderer
                   schema={toSchema()}
                   onSubmit={(data) => setSubmittedData(data)}
@@ -574,7 +574,7 @@ export function FormCanvas({
                 />
               </div>
               {submittedData && (
-                <div className="rounded-md border">
+                <div className="rounded-md border max-w-3xl mx-auto mb-4">
                   <CodeBlock language="json" code={JSON.stringify(submittedData, null, 2)} filename={`${filename}.submitted.json`} onSelection={() => {}} />
                 </div>
               )}

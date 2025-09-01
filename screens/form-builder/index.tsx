@@ -164,6 +164,12 @@ export default function FormBuilder({ formId, filename }: FormBuilderProps) {
 
 
 
+  React.useEffect(() => {
+    const original = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = original }
+  }, [])
+
   return (
     <Box component="section" sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexGrow: 1 }}>
       {/* Header moved inside left palette. No top bar to save vertical space */}
