@@ -6,6 +6,9 @@ import NextTopLoader from 'nextjs-toploader'
 import './globals.css'
 
 import AllProviders from '@/providers'
+import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin'
+import { extractRouterConfig } from 'uploadthing/server'
+import { ourFileRouter } from './api/uploadthing/core'
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -79,6 +82,7 @@ export default function RootLayout({
           <div>
             <NextTopLoader color="#FF9432" showSpinner={false} />
             <Toaster />
+            <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
             <AllProviders>
               <main className="h-dvh max-h-dvh overflow-hidden flex flex-col">{children}</main>
             </AllProviders>

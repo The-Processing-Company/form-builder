@@ -13,9 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import If from '@/components/ui/if'
 
-import { LuGithub, LuMenu } from 'react-icons/lu'
-import { FaXTwitter } from 'react-icons/fa6'
-import { SiBuymeacoffee } from 'react-icons/si'
+import { LuMenu } from 'react-icons/lu'
 
 import Logo from '@/assets/logo.svg'
 import { usePathname } from 'next/navigation'
@@ -42,16 +40,8 @@ type Tabs = {
 }
 
 const tabs: Tabs[] = [
-  { name: 'Hi', href: '/readme', variant: 'smile' },
-  {
-    name: 'Roadmap',
-    href: 'https://shadcnform.featurebase.app/',
-    variant: 'arrow',
-    isNewTab: true,
-  },
-  { name: 'Components', href: '/components', variant: 'linkHover2' },
-  { name: 'Templates', href: '/templates', variant: 'linkHover2' },
   { name: 'Forms', href: '/forms', variant: 'linkHover2' },
+  { name: 'Workflows', href: '/workflows', variant: 'linkHover2' },
 ]
 
 export default function Header() {
@@ -59,7 +49,7 @@ export default function Header() {
   const currentBasePath = '/' + pathname.split('/')[1]
 
   return (
-    <header className="max-w-5xl mx-auto flex justify-between items-center my-5 px-5 lg:px-0">
+    <header className="container mx-auto flex justify-between items-center my-5 px-5">
       <Link
         href="/"
         className="cursor-pointer md:hidden dark:bg-white dark:rounded-lg p-2"
@@ -107,24 +97,6 @@ export default function Header() {
             Playground
           </Button>
         </Link>
-        <Link
-          href="https://github.com/hasanharman/form-builder"
-          target="_blank"
-        >
-          <Button variant="outline" className="rounded-full p-2">
-            <LuGithub className="text-lg" />
-          </Button>
-        </Link>
-        <Link href="https://x.com/strad3r" target="_blank">
-          <Button variant="outline" className="rounded-full p-2">
-            <FaXTwitter className="text-lg" />
-          </Button>
-        </Link>
-        <Link href="https://buymeacoffee.com/hasanharman" target="_blank">
-        <Button className="bg-yellow-400 text-black hover:text-white hover:dark:text-black  rounded-full p-2">
-        <SiBuymeacoffee className="text-lg" />
-          </Button>
-        </Link>
         <ThemeSwitch />
       </div>
 
@@ -140,28 +112,6 @@ export default function Header() {
             <div className="mx-auto w-full max-w-sm flex flex-col gap-3">
               <DrawerFooter>
                 <div className="flex justify-end space-x-2">
-                  <Link
-                    href="https://github.com/hasanharman/form-builder"
-                    target="_blank"
-                  >
-                    <Button variant="outline" className="rounded-full p-2">
-                      <LuGithub className="text-lg" />
-                    </Button>
-                  </Link>
-
-                  <Link href="https://x.com/strad3r" target="_blank">
-                    <Button variant="outline" className="rounded-full p-2">
-                      <FaXTwitter className="text-lg" />
-                    </Button>
-                  </Link>
-                  <Link
-                    href="https://buymeacoffee.com/hasanharman"
-                    target="_blank"
-                  >
-                    <Button className="bg-yellow-400 text-black hover:text-white  rounded-full p-2">
-                      <SiBuymeacoffee className="text-lg" />
-                    </Button>
-                  </Link>
                   <ThemeSwitch />
                 </div>
 

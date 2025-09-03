@@ -197,3 +197,32 @@ export interface HeadlessFieldApi<T extends FieldTypeKey = FieldTypeKey> {
   onChange: (value: FieldValueFor<T>) => void
   error?: string
 }
+
+// --------------------------------------------
+// Workflow types
+// --------------------------------------------
+
+export interface WorkflowVersion {
+  id: string
+  label: string
+  isActive: boolean
+  uploadedAt: number
+  author?: string
+  changeDescription: string
+  fileName: string
+  fileSizeBytes: number
+  fileType: string
+  // Either a remote URL (UploadThing) or inline contents for local/demo
+  fileUrl?: string
+  fileContents?: string
+}
+
+export interface StoredWorkflow {
+  id: string
+  name: string
+  description?: string
+  tags?: string[]
+  createdAt: number
+  updatedAt: number
+  versions: WorkflowVersion[]
+}

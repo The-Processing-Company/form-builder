@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+const { withUt } = require('uploadthing/tw')
+
+module.exports = withUt({
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -20,4 +22,4 @@ module.exports = {
     'col-span-11',
     'col-span-12',
   ],
-}
+})
